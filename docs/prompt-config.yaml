@@ -1,0 +1,473 @@
+{
+  "version": "1.0.0",
+  "name": "multiturn-flow-prompts",
+  "description": "Prompt config for multiturn response flow nodes",
+  "global_system": "역할: 당신은 멀티턴 RAG 오케스트레이션 실행 모델이다. 목표: 사실 기반, 근거 중심, 사용자 선호 반영 응답 생성. 규칙: (1) JSON만 출력 (2) 불확실성 명시 (3) 정책 위반 가능 시 차단 또는 안전 대안 제시 (4) 복합 질문은 분해 (5) 최신성 중요 질의는 time_sensitivity=true 표시.",
+  "nodes": [
+    {
+      "id": "B",
+      "name": "input_parse",
+      "system": "사용자 입력에서 의도/엔티티/질문 수/제약조건을 추출하라.",
+      "user_template": "message: {{user_message}}\nrecent_turns: {{recent_turns}}",
+      "output_schema": {
+        "intent": "string",
+        "entities": [
+          "string"
+        ],
+        "questions": [
+          {
+            "id": "q1",
+            "text": "string"
+          }
+        ],
+        "constraints": {
+          "time_range": "string|null",
+          "format": "string|null",
+          "length": "string|null"
+        },
+        "time_sensitivity": true
+      }
+    },
+    {
+      "id": "CD",
+      "name": "compound_decision_and_decompose",
+      "system": "질문을 단일/복합으로 판정하고 복합이면 최소 단위 질문으로 분해하라.",
+      "user_template": "parsed_input: {{parsed_input}}",
+      "output_schema": {
+        "is_compound": true,
+        "questions": [
+          {
+            "id": "q1",
+            "text": "string",
+            "depends_on": []
+          },
+          {
+            "id": "q2",
+            "text": "string",
+            "depends_on": [
+              "q1"
+            ]
+          }
+        ],
+        "strategy": "single|compound_parallel|compound_sequential|mixed"
+      }
+    },
+    {
+      "id": "M0P0",
+      "name": "context_profile_normalize",
+      "system": "세션 컨텍스트와 사용자 프로필을 답변 생성에 필요한 최소 형태로 정규화하라.",
+      "user_template": "context_raw: {{context_raw}}\nprofile_raw: {{profile_raw}}",
+      "output_schema": {
+        "context": {
+          "summary": "string",
+          "open_loops": [
+            "string"
+          ],
+          "facts": [
+            "string"
+          ]
+        },
+        "profile": {
+          "tone": "concise|balanced|detailed",
+          "format": "paragraph|bullet|table",
+          "language": "ko"
+        }
+      }
+    },
+    {
+      "id": "G0",
+      "name": "policy_precheck",
+      "system": "입력 내용의 정책 위반 여부를 판정하라.",
+      "user_template": "message: {{user_message}}\npolicy_rules: {{policy_rules}}",
+      "output_schema": {
+        "status": "pass|warn|block",
+        "reason_codes": [
+          "string"
+        ],
+        "safe_alternative": "string|null"
+      }
+    },
+    {
+      "id": "E",
+      "name": "retrieval_strategy",
+      "system": "각 질문에 대해 검색 필요 여부와 검색 유형을 결정하라.",
+      "user_template": "questions: {{questions}}\ncontext: {{context}}",
+      "output_schema": {
+        "retrieval_required": true,
+        "plan": [
+          {
+            "question_id": "q1",
+            "need_retrieval": true,
+            "mode": "keyword|vector|hybrid",
+            "why": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F1",
+      "name": "query_rewrite",
+      "system": "질문별 검색 성능을 높이도록 쿼리를 재작성하라.",
+      "user_template": "question: {{question}}\nconstraints: {{constraints}}\ndomain_terms: {{domain_terms}}",
+      "output_schema": {
+        "query": "string",
+        "alt_queries": [
+          "string"
+        ],
+        "filters": {
+          "time_range": "string|null",
+          "domain": [
+            "string"
+          ],
+          "language": "ko|en|null"
+        }
+      }
+    },
+    {
+      "id": "F2F3F4",
+      "name": "dag_and_execution_stages",
+      "system": "질문 DAG를 만들고 병렬/순차 실행 단계를 산출하라.",
+      "user_template": "questions: {{questions}}",
+      "output_schema": {
+        "dag": [
+          {
+            "from": "q1",
+            "to": "q2"
+          }
+        ],
+        "execution_stages": [
+          [
+            "q1",
+            "q3"
+          ],
+          [
+            "q2"
+          ]
+        ],
+        "notes": "string"
+      }
+    },
+    {
+      "id": "F5F6",
+      "name": "evidence_extract_and_score",
+      "system": "검색 후보에서 답변 근거를 추출하고 스코어링하라.",
+      "user_template": "candidates: {{candidates}}\nquestion: {{question}}",
+      "output_schema": {
+        "evidence": [
+          {
+            "doc_id": "string",
+            "chunk_id": "string",
+            "quote": "string",
+            "relevance": 0.91,
+            "freshness": 0.72,
+            "trust": 0.88
+          }
+        ],
+        "deduped": true
+      }
+    },
+    {
+      "id": "V0V1",
+      "name": "evidence_sufficiency_and_retry",
+      "system": "근거가 충분한지 판정하고 부족하면 재검색 액션을 제시하라.",
+      "user_template": "question: {{question}}\nevidence: {{evidence}}",
+      "output_schema": {
+        "sufficient": false,
+        "gaps": [
+          "string"
+        ],
+        "retry_actions": [
+          {
+            "type": "expand_query|expand_time|add_source|re-decompose",
+            "payload": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "S0",
+      "name": "draft_answers_per_question",
+      "system": "질문별 근거 기반 중간답을 생성하라. 근거 없는 단정은 금지한다.",
+      "user_template": "questions: {{questions}}\nevidence_by_question: {{evidence_by_question}}",
+      "output_schema": {
+        "drafts": [
+          {
+            "question_id": "q1",
+            "answer": "string",
+            "confidence": 0.84,
+            "citations": [
+              {
+                "doc_id": "d1",
+                "chunk_id": "c3"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "S1S2",
+      "name": "conflict_detect_and_resolve",
+      "system": "질문/근거 간 충돌을 감지하고 우선순위(신뢰도 > 최신성 > 정책 적합성)로 해결하라.",
+      "user_template": "drafts: {{drafts}}\nevidence: {{evidence}}",
+      "output_schema": {
+        "has_conflict": true,
+        "conflicts": [
+          {
+            "type": "fact_conflict",
+            "items": [
+              "q1",
+              "q2"
+            ]
+          }
+        ],
+        "resolution": [
+          {
+            "question_id": "q2",
+            "decision": "string",
+            "why": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T0",
+      "name": "final_synthesis",
+      "system": "질문별 답변을 하나의 일관된 최종 답변으로 합성하라.",
+      "user_template": "drafts: {{resolved_drafts}}\ncitations: {{citations}}",
+      "output_schema": {
+        "answer": "string",
+        "sections": [
+          {
+            "title": "string",
+            "body": "string"
+          }
+        ],
+        "citations": [
+          {
+            "doc_id": "string",
+            "chunk_id": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "T1",
+      "name": "personalize_postprocess",
+      "system": "정답 의미를 바꾸지 말고 사용자 선호(톤/길이/형식)만 반영하라.",
+      "user_template": "answer: {{answer}}\nprofile: {{profile}}",
+      "output_schema": {
+        "personalized_answer": "string",
+        "applied": {
+          "tone": "string",
+          "format": "string",
+          "length": "string"
+        }
+      }
+    },
+    {
+      "id": "T2",
+      "name": "multiturn_bridge",
+      "system": "이전 대화 맥락을 1~2문장으로 연결하고 다음 액션을 제안하라.",
+      "user_template": "recent_turns: {{recent_turns}}\ncurrent_answer: {{personalized_answer}}",
+      "output_schema": {
+        "bridged_answer": "string",
+        "followups": [
+          "string",
+          "string"
+        ]
+      }
+    },
+    {
+      "id": "R0R1R2R3",
+      "name": "memory_candidate_and_save_decision",
+      "system": "저장 가치가 높은 정보만 메모리 후보로 추출하고 정책 통과 여부를 판정하라.",
+      "user_template": "turn_data: {{turn_data}}\nmemory_policy: {{memory_policy}}",
+      "output_schema": {
+        "candidates": [
+          {
+            "type": "long_term|short_term",
+            "key": "string",
+            "value": "string",
+            "confidence": 0.0,
+            "contains_pii": false
+          }
+        ],
+        "to_save": [
+          "string"
+        ],
+        "to_skip": [
+          {
+            "key": "string",
+            "reason": "string"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GY",
+      "name": "safe_alternative_response",
+      "system": "정책상 차단 시 가능한 범위의 안전한 대체 답변을 제공하라.",
+      "user_template": "blocked_reason: {{blocked_reason}}\nuser_intent: {{user_intent}}",
+      "output_schema": {
+        "safe_response": "string",
+        "explanation": "string",
+        "allowed_next_steps": [
+          "string"
+        ]
+      }
+    }
+  ],
+  "pipeline": [
+    "B",
+    "CD",
+    "M0P0",
+    "G0",
+    "E",
+    "F1",
+    "F2F3F4",
+    "F5F6",
+    "V0V1",
+    "S0",
+    "S1S2",
+    "T0",
+    "T1",
+    "T2",
+    "R0R1R2R3"
+  ],
+  "demo_context": {
+    "user_message": "지난번 정리한 벡터DB 후보 비교해주고, 우리 팀 상황 기준으로 추천안까지 제시해줘.",
+    "recent_turns": [
+      "user: 우리 팀은 6명이고 Python 중심 스택이야.",
+      "assistant: 이해했습니다. 운영비와 관리 부담을 함께 보겠습니다."
+    ],
+    "parsed_input": {
+      "intent": "compare_and_recommend",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "벡터DB 후보를 비교해줘"
+        },
+        {
+          "id": "q2",
+          "text": "우리 팀 상황 기준 추천안을 제시해줘"
+        }
+      ]
+    },
+    "context_raw": {
+      "summary": "소규모 팀, Python 중심, 운영 단순성 중시"
+    },
+    "profile_raw": {
+      "tone": "balanced",
+      "format": "bullet",
+      "language": "ko"
+    },
+    "policy_rules": [
+      "no_pii_leak",
+      "no_harmful_instruction"
+    ],
+    "questions": [
+      {
+        "id": "q1",
+        "text": "벡터DB 후보 비교"
+      },
+      {
+        "id": "q2",
+        "text": "팀 상황 기준 추천"
+      }
+    ],
+    "context": {
+      "summary": "팀 규모 작고 빠른 구축이 중요"
+    },
+    "question": "우리 팀에 맞는 벡터DB 추천",
+    "constraints": {
+      "time_range": "최근 1년",
+      "format": "bullet",
+      "length": "중간"
+    },
+    "domain_terms": [
+      "vector database",
+      "managed service",
+      "latency"
+    ],
+    "candidates": [
+      {
+        "doc_id": "d1",
+        "chunk_id": "c1",
+        "text": "A 서비스는 운영이 단순하고 비용이 예측 가능."
+      },
+      {
+        "doc_id": "d2",
+        "chunk_id": "c4",
+        "text": "B 서비스는 고성능이나 운영 난이도가 높음."
+      }
+    ],
+    "evidence": [
+      {
+        "doc_id": "d1",
+        "chunk_id": "c1",
+        "quote": "운영 단순성 높음",
+        "relevance": 0.9,
+        "freshness": 0.8,
+        "trust": 0.85
+      }
+    ],
+    "evidence_by_question": {
+      "q1": [
+        {
+          "doc_id": "d1",
+          "chunk_id": "c1"
+        }
+      ],
+      "q2": [
+        {
+          "doc_id": "d2",
+          "chunk_id": "c4"
+        }
+      ]
+    },
+    "drafts": [
+      {
+        "question_id": "q1",
+        "answer": "A가 운영 부담이 낮음"
+      },
+      {
+        "question_id": "q2",
+        "answer": "팀 특성상 A 우선 검토"
+      }
+    ],
+    "resolved_drafts": [
+      {
+        "question_id": "q1",
+        "answer": "A 우위"
+      },
+      {
+        "question_id": "q2",
+        "answer": "A 추천"
+      }
+    ],
+    "citations": [
+      {
+        "doc_id": "d1",
+        "chunk_id": "c1"
+      }
+    ],
+    "answer": "A가 팀 상황에 더 적합합니다.",
+    "profile": {
+      "tone": "balanced",
+      "format": "bullet",
+      "length": "medium"
+    },
+    "personalized_answer": "요약: A 추천\n근거: 운영 단순, 팀 규모 적합",
+    "turn_data": {
+      "user_preference": "bullet format",
+      "decision": "A 검토 우선"
+    },
+    "memory_policy": {
+      "allow_pii": false,
+      "min_confidence": 0.7
+    },
+    "blocked_reason": "policy_sensitive_content",
+    "user_intent": "도움 요청"
+  }
+}
