@@ -16,6 +16,59 @@
 - 사용자 선호를 후처리 단계에 반영하는 개인화 흐름 문서화
 - 메모리 후보 추출과 저장 정책을 분리해 설계
 
+## End-to-End Flowchart
+
+```mermaid
+flowchart TD
+    A[User message] --> B[Input parsing<br/>intent, entity, constraints]
+    A --> C[Load session context<br/>recent turns, running summary]
+    A --> D[Load user profile<br/>tone, length, format]
+    A --> P[Policy precheck]
+
+    P -->|block| PX[Safe alternative response]
+    P -->|pass| E{Compound question?}
+
+    E -->|No| F1[Single-question planning]
+    E -->|Yes| F2[Decompose into Q1..Qn<br/>build dependency DAG]
+
+    F1 --> G[Execution plan]
+    F2 --> G
+
+    G --> H{Source selection}
+    H -->|API facts| I[/chat or internal API lookup/]
+    H -->|RAG policy/docs| J[/retrieve -> /rerank/]
+    H -->|Hybrid| K[Run API and RAG in parallel]
+
+    I --> L[Normalize evidence]
+    J --> L
+    K --> L
+
+    L --> M{Evidence sufficient?}
+    M -->|No| N[Retry loop<br/>rewrite query, expand range, re-decompose]
+    N --> H
+    M -->|Yes| O[Draft answer per question]
+
+    O --> Q{Conflict detected?}
+    Q -->|Yes| R[Resolve conflicts<br/>trust > freshness > policy fit]
+    Q -->|No| S[Final synthesis]
+    R --> S
+
+    S --> T[Personalize postprocess]
+    D --> T
+    T --> U[Multiturn bridge<br/>connect previous turn and next action]
+    U --> V[Return response]
+
+    V --> W[Extract memory candidates]
+    W --> X{Save to memory?}
+    X -->|Long-term| Y[/memory/upsert/]
+    X -->|Session only| Z[Keep in session context]
+```
+
+Flow basis:
+- Prompt pipeline: `B -> CD -> M0P0 -> G0 -> E -> F1 -> F2F3F4 -> F5F6 -> V0V1 -> S0 -> S1S2 -> T0 -> T1 -> T2 -> R0R1R2R3`
+- API surfaces: `/chat`, `/plan`, `/retrieve`, `/rerank`, `/answer`, `/memory/upsert`, `/policy/check`
+- Detailed references: `docs/multiturn-dialog-flow-advanced.md`, `docs/prompt-config.yaml`, `docs/openapi-multiturn.yaml`
+
 ## 저장소 구성
 
 ```text
