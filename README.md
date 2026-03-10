@@ -18,50 +18,72 @@
 
 ## End-to-End Flowchart
 
+### Basic Flow
+
 ```mermaid
 flowchart TD
-    A[User message] --> B[Input parsing<br/>intent, entity, constraints]
-    A --> C[Load session context<br/>recent turns, running summary]
-    A --> D[Load user profile<br/>tone, length, format]
-    A --> P[Policy precheck]
+    A[사용자 입력 수신] --> B[직전 대화 확인]
+    B --> C[현재 질문 의도 파악]
+    C --> D[문서유형 필터 1차 결정]
+    D --> E[필터 기반 검색 실행]
+    E --> F{검색 결과 충분한가}
+    F -->|예| G[근거 문서 정리]
+    F -->|아니오| H[질문 재해석 또는 필터 확장]
+    H --> I[재검색 실행]
+    I --> J{재검색 결과 충분한가}
+    J -->|예| G
+    J -->|아니오| K[제한된 범위 내 최선 답변 또는 추가 확인 질문]
+    G --> L[멀티턴 맥락 반영]
+    L --> M[최종 답변 생성]
+    M --> N[다음 턴용 컨텍스트 저장]
+```
 
-    P -->|block| PX[Safe alternative response]
-    P -->|pass| E{Compound question?}
+### Advanced Flow
 
-    E -->|No| F1[Single-question planning]
-    E -->|Yes| F2[Decompose into Q1..Qn<br/>build dependency DAG]
+```mermaid
+flowchart TD
+    A[사용자 입력 수신] --> B[질문 파싱<br/>의도, 엔티티, 슬롯 추출]
+    A --> C[세션 컨텍스트 로드<br/>최근 N턴 + 누적 요약]
+    A --> D[개인화 프로필 로드<br/>톤/길이/형식]
+    A --> P[정책 사전검사<br/>민감정보/요청 안전성]
 
-    F1 --> G[Execution plan]
-    F2 --> G
+    P -->|block| PX[안전 대체 응답 반환]
+    P -->|pass| E{복합질문 여부}
 
-    G --> H{Source selection}
-    H -->|API facts| I[/chat or internal API lookup/]
-    H -->|RAG policy/docs| J[/retrieve -> /rerank/]
-    H -->|Hybrid| K[Run API and RAG in parallel]
+    E -->|단일| F1[단일 질의 계획]
+    E -->|복합| F2[Q1..Qn 분해 + 의존관계 DAG]
 
-    I --> L[Normalize evidence]
+    F1 --> G
+    F2 --> G[질문별 실행계획 수립]
+
+    G --> H{질문별 데이터소스}
+    H -->|사실 조회| I[API 조회 실행<br/>계약/적립금/비율/상태]
+    H -->|규정 조회| J[RAG 검색 실행<br/>횟수제한/영업일/예외]
+    H -->|혼합| K[API+RAG 병렬 실행]
+
+    I --> L[근거 정규화]
     J --> L
     K --> L
 
-    L --> M{Evidence sufficient?}
-    M -->|No| N[Retry loop<br/>rewrite query, expand range, re-decompose]
+    L --> M{근거 충분성}
+    M -->|부족| N[재검색/재조회 루프<br/>쿼리 확장/기간 확장/질문 재분해]
     N --> H
-    M -->|Yes| O[Draft answer per question]
+    M -->|충분| O[질문별 중간답 생성]
 
-    O --> Q{Conflict detected?}
-    Q -->|Yes| R[Resolve conflicts<br/>trust > freshness > policy fit]
-    Q -->|No| S[Final synthesis]
-    R --> S
+    O --> Q{충돌 여부}
+    Q -->|있음| R[충돌 해결<br/>정책 최신성 > 신뢰도 > 응답 일관성]
+    Q -->|없음| S
+    R --> S[최종 답변 합성]
 
-    S --> T[Personalize postprocess]
+    S --> T[개인화 후처리<br/>요약/불릿/표 형식 반영]
     D --> T
-    T --> U[Multiturn bridge<br/>connect previous turn and next action]
-    U --> V[Return response]
+    T --> U[멀티턴 연결문 생성<br/>이전 맥락 + 다음 액션]
+    U --> V[응답 반환]
 
-    V --> W[Extract memory candidates]
-    W --> X{Save to memory?}
-    X -->|Long-term| Y[/memory/upsert/]
-    X -->|Session only| Z[Keep in session context]
+    V --> W[메모리 업데이트 후보 추출]
+    W --> X{장기 저장 여부}
+    X -->|예| Y[선호/지속사실 저장]
+    X -->|아니오| Z[세션 컨텍스트만 유지]
 ```
 
 Flow basis:
