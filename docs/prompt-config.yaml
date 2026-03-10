@@ -1,4 +1,4 @@
-{
+﻿{
   "version": "1.0.0",
   "name": "multiturn-flow-prompts",
   "description": "Prompt config for multiturn response flow nodes",
