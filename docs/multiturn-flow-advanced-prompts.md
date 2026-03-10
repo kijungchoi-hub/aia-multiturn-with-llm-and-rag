@@ -1,6 +1,6 @@
 ﻿# 멀티턴 고급 흐름 프롬프트 템플릿
 
-기준: `multiturn-dialog-flow-advanced.md`의 고급 멀티턴 흐름과 `multiturn-flow-prompts.md`의 기존 상세 프롬프트.
+기준: [multiturn-dialog-flow-advanced.md](multiturn-dialog-flow-advanced.md)의 고급 멀티턴 흐름과 [multiturn-flow-prompts.md](multiturn-flow-prompts.md)의 기존 상세 프롬프트.
 
 ## 0) 공통 규칙 프롬프트 (Global System)
 
@@ -13,7 +13,7 @@
 3) 안전/정책 위반 가능 시 block 또는 safe_alternative를 제안한다.
 4) 질문이 복합이면 질문 단위로 분해한다.
 5) 최신성이 중요한 질의는 time_sensitivity=true로 표시한다.
-6) API 사실 조회와 RAG 규정 조회가 함께 필요하면 병렬 실행 계획을 제시한다.
+6) API 사실성 데이터 조회와 RAG 정책성 지식 조회가 함께 필요하면 병렬 실행 계획을 제시한다.
 ```
 
 ## 1) 입력 파싱 (B)
@@ -91,7 +91,7 @@ policy_rules: {{policy_rules}}
 }
 ```
 
-## 5) 데이터소스 및 검색 전략 결정 (E, E1)
+## 5) 데이터 소스 및 검색 전략 결정 (E, E1)
 
 ```text
 [System]
@@ -181,7 +181,7 @@ question: {{question}}
 }
 ```
 
-## 9) 근거 충분성 평가 및 재시도 루프 (V0, V1)
+## 9) 근거 충분성 평가 및 재검색 또는 재조회 루프 (V0, V1)
 
 ```text
 [System]
@@ -201,7 +201,7 @@ evidence: {{evidence}}
 }
 ```
 
-## 10) 질문별 중간답 생성 (S0)
+## 10) 질문별 중간 응답 생성 (S0)
 
 ```text
 [System]
@@ -243,11 +243,11 @@ evidence: {{evidence}}
 }
 ```
 
-## 12) 최종 답변 합성 (T0)
+## 12) 최종 응답 합성 (T0)
 
 ```text
 [System]
-질문별 답변을 하나의 일관된 최종 답변으로 합성하라.
+질문별 답변을 하나의 일관된 최종 응답으로 합성하라.
 필요하면 현재값, 규정, 적용시점 순으로 구조화하라.
 
 [User]

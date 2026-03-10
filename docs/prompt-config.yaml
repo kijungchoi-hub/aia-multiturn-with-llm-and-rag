@@ -233,7 +233,7 @@
     {
       "id": "T0",
       "name": "final_synthesis",
-      "system": "질문별 답변을 하나의 일관된 최종 답변으로 합성하라.",
+      "system": "질문별 답변을 하나의 일관된 최종 응답으로 합성하라.",
       "user_template": "drafts: {{resolved_drafts}}\ncitations: {{citations}}",
       "output_schema": {
         "answer": "string",

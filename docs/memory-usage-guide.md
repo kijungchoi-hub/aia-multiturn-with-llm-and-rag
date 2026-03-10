@@ -11,10 +11,10 @@
 
 ## 기준 문서
 
-- `docs/openapi-multiturn.yaml`
-- `docs/multiturn-dialog-flow-advanced.md`
-- `docs/multiturn-flow-prompts.md`
-- `docs/prompt-config.yaml`
+- [openapi-multiturn.yaml](openapi-multiturn.yaml)
+- [multiturn-dialog-flow-advanced.md](multiturn-dialog-flow-advanced.md)
+- [multiturn-flow-prompts.md](multiturn-flow-prompts.md)
+- [prompt-config.yaml](prompt-config.yaml)
 
 ## 메모리 개념
 
@@ -27,7 +27,7 @@
 
 ## 저장 시점
 
-권장 시점은 최종 답변 반환 직후다.
+권장 시점은 최종 응답 반환 직후다.
 
 흐름 기준:
 
@@ -40,8 +40,8 @@
 
 관련 근거:
 
-- `docs/multiturn-dialog-flow-advanced.md` 의 `V -> W -> X -> Y/Z`
-- `docs/multiturn-flow-prompts.md` 의 `R0/R1/R2/R3`
+- [multiturn-dialog-flow-advanced.md](multiturn-dialog-flow-advanced.md)의 `V -> W -> X -> Y/Z`
+- [multiturn-flow-prompts.md](multiturn-flow-prompts.md)의 `R0/R1/R2/R3`
 
 ## 무엇을 저장할지
 
@@ -94,7 +94,7 @@
 메모리 후보는 별도 프롬프트 노드에서 추출한다.
 
 - 노드 이름: `memory_candidate_and_save_decision`
-- 위치: `docs/prompt-config.yaml`
+- 위치: [prompt-config.yaml](prompt-config.yaml)
 
 입력:
 
@@ -136,7 +136,7 @@
 
 스펙 위치:
 
-- `docs/openapi-multiturn.yaml`
+- [openapi-multiturn.yaml](openapi-multiturn.yaml)
 
 ### 요청 스키마
 

@@ -1,6 +1,6 @@
 ﻿# 멀티턴 응답 상세 흐름별 프롬프트 템플릿
 
-기준: `multiturn-dialog-flow.md`의 `4) 멀티턴 응답 상세 흐름` 노드.
+기준: [multiturn-dialog-flow-advanced.md](multiturn-dialog-flow-advanced.md)의 `4) 멀티턴 응답 상세 흐름` 노드.
 
 ## 0) 공통 규칙 프롬프트 (Global System)
 
@@ -164,7 +164,7 @@ question: {{question}}
 }
 ```
 
-## 9) 근거 충분성 평가 + 재검색 루프 (V0, V1)
+## 9) 근거 충분성 평가 및 재검색 또는 재조회 루프 (V0, V1)
 
 ```text
 [System]
@@ -184,7 +184,7 @@ evidence: {{evidence}}
 }
 ```
 
-## 10) 질문별 중간답 생성 (S0)
+## 10) 질문별 중간 응답 생성 (S0)
 
 ```text
 [System]
@@ -221,11 +221,11 @@ evidence: {{evidence}}
 }
 ```
 
-## 12) 최종 답변 합성 (T0)
+## 12) 최종 응답 합성 (T0)
 
 ```text
 [System]
-질문별 답변을 하나의 일관된 최종 답변으로 합성하라.
+질문별 답변을 하나의 일관된 최종 응답으로 합성하라.
 
 [User]
 drafts: {{resolved_drafts}}
@@ -321,4 +321,3 @@ user_intent: {{user_intent}}
 6. `S0 -> S1/S2 -> T0 -> T1 -> T2`
 7. `R0/R1/R2(or R3)`
 8. 정책 차단 시 언제든 `GY`로 단락 처리
-
