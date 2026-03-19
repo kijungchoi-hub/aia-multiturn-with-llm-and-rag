@@ -1,9 +1,10 @@
 ﻿openapi: 3.1.0
 info:
-  title: Multiturn RAG Assistant API
-  version: 0.1.0
+  title: Multiturn Chatflow RAG Assistant API
+  version: 0.2.0
   description: |
-    Personalization, multiturn context, and multi-question retrieval workflow API.
+    Dify Chatflow-centered multiturn orchestration API.
+    Azure AI Search hybrid retrieval and Workflow subflow boundaries are reflected.
 servers:
   - url: https://api.example.com
     description: Production
@@ -12,18 +13,19 @@ servers:
 
 tags:
   - name: Chat
-  - name: Planning
-  - name: Retrieval
-  - name: Ranking
+  - name: Supervisor
+  - name: Search
+  - name: Judge
   - name: Answer
   - name: Memory
   - name: Policy
+  - name: Workflow
 
 paths:
   /chat:
     post:
       tags: [Chat]
-      summary: End-to-end multiturn chat orchestration
+      summary: End-to-end multiturn chat orchestration on Dify Chatflow
       operationId: chat
       requestBody:
         required: true
@@ -43,73 +45,86 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /plan:
+  /supervisor/route:
     post:
-      tags: [Planning]
-      summary: Split and plan single/compound questions
-      operationId: plan
+      tags: [Supervisor]
+      summary: Decide route and rewrite query from multiturn context
+      operationId: supervisorRoute
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PlanRequest'
+              $ref: '#/components/schemas/SupervisorRouteRequest'
       responses:
         '200':
-          description: Plan result
+          description: Route decision
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlanResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                $ref: '#/components/schemas/SupervisorRouteResponse'
 
-  /retrieve:
+  /search/hybrid:
     post:
-      tags: [Retrieval]
-      summary: Hybrid retrieval (keyword + vector + metadata filter)
-      operationId: retrieve
+      tags: [Search]
+      summary: Azure AI Search hybrid retrieval with optional semantic ranker
+      operationId: hybridSearch
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RetrieveRequest'
+              $ref: '#/components/schemas/HybridSearchRequest'
       responses:
         '200':
-          description: Candidate documents
+          description: Hybrid search result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RetrieveResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                $ref: '#/components/schemas/HybridSearchResponse'
 
-  /rerank:
+  /judge/evidence:
     post:
-      tags: [Ranking]
-      summary: Re-rank candidates using relevance/freshness/trust
-      operationId: rerank
+      tags: [Judge]
+      summary: Judge whether current evidence is sufficient for answering
+      operationId: judgeEvidence
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RerankRequest'
+              $ref: '#/components/schemas/EvidenceJudgeRequest'
       responses:
         '200':
-          description: Ranked evidence
+          description: Sufficiency result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RerankResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                $ref: '#/components/schemas/EvidenceJudgeResponse'
+
+  /workflow/dispatch:
+    post:
+      tags: [Workflow]
+      summary: Dispatch stateless Dify Workflow subflow for API or async jobs
+      operationId: workflowDispatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowDispatchRequest'
+      responses:
+        '200':
+          description: Workflow execution result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDispatchResponse'
 
   /answer:
     post:
       tags: [Answer]
-      summary: Generate grounded answer from plan/evidence/context/profile
+      summary: Generate grounded answer from route, evidence, workflow result, and context
       operationId: answer
       requestBody:
         required: true
@@ -132,7 +147,7 @@ paths:
   /memory/upsert:
     post:
       tags: [Memory]
-      summary: Upsert short-term/long-term memory
+      summary: Upsert session memory and long-term memory candidates
       operationId: upsertMemory
       requestBody:
         required: true
@@ -147,13 +162,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemoryUpsertResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
 
   /policy/check:
     post:
       tags: [Policy]
-      summary: Validate input/output against safety and privacy policy
+      summary: Validate input or output against safety and privacy policy
       operationId: policyCheck
       requestBody:
         required: true
@@ -168,8 +181,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PolicyCheckResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
 
 components:
   responses:
@@ -189,9 +200,9 @@ components:
   schemas:
     ChatRequest:
       type: object
-      required: [session_id, user_id, message]
+      required: [conversation_id, user_id, message]
       properties:
-        session_id:
+        conversation_id:
           type: string
         user_id:
           type: string
@@ -200,6 +211,10 @@ components:
         locale:
           type: string
           default: ko-KR
+        context:
+          $ref: '#/components/schemas/SessionContext'
+        profile:
+          $ref: '#/components/schemas/UserProfile'
         options:
           $ref: '#/components/schemas/ChatOptions'
 
@@ -222,12 +237,22 @@ components:
         enable_memory_write:
           type: boolean
           default: true
+        max_search_retries:
+          type: integer
+          minimum: 0
+          maximum: 2
+          default: 2
 
     ChatResponse:
       type: object
-      required: [answer, policy]
+      required: [route, answer, policy]
       properties:
+        route:
+          type: string
+          enum: [answer_direct, search, clarify]
         answer:
+          type: string
+        clarifying_question:
           type: string
         citations:
           type: array
@@ -242,7 +267,7 @@ components:
         debug:
           $ref: '#/components/schemas/DebugTrace'
 
-    PlanRequest:
+    SupervisorRouteRequest:
       type: object
       required: [message]
       properties:
@@ -253,92 +278,122 @@ components:
         profile:
           $ref: '#/components/schemas/UserProfile'
 
-    PlanResponse:
+    SupervisorRouteResponse:
       type: object
-      required: [questions, dag, retrieval_required]
+      required: [route]
       properties:
-        questions:
-          type: array
-          items:
-            $ref: '#/components/schemas/QuestionUnit'
-        dag:
-          type: array
-          items:
-            $ref: '#/components/schemas/DagEdge'
-        retrieval_required:
-          type: boolean
-        strategy:
+        route:
           type: string
-          enum: [single, compound_parallel, compound_sequential, mixed]
-
-    RetrieveRequest:
-      type: object
-      required: [queries]
-      properties:
-        queries:
+          enum: [answer_direct, search, clarify]
+        rewritten_query:
+          type: string
+        sub_questions:
           type: array
-          minItems: 1
           items:
-            $ref: '#/components/schemas/RetrieveQuery'
+            type: string
         filters:
-          $ref: '#/components/schemas/RetrieveFilter'
-        top_k:
-          type: integer
-          minimum: 1
-          maximum: 100
-          default: 20
+          $ref: '#/components/schemas/SearchFilter'
+        clarifying_question:
+          type: string
+        use_workflow:
+          type: boolean
 
-    RetrieveResponse:
+    HybridSearchRequest:
       type: object
-      required: [candidates]
+      required: [query]
       properties:
-        candidates:
-          type: array
-          items:
-            $ref: '#/components/schemas/DocumentCandidate'
-
-    RerankRequest:
-      type: object
-      required: [candidates]
-      properties:
-        context:
-          $ref: '#/components/schemas/SessionContext'
-        candidates:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/DocumentCandidate'
+        query:
+          type: string
         top_k:
           type: integer
           minimum: 1
           maximum: 50
           default: 8
+        use_semantic_ranker:
+          type: boolean
+          default: true
+        filters:
+          $ref: '#/components/schemas/SearchFilter'
 
-    RerankResponse:
+    HybridSearchResponse:
       type: object
-      required: [evidence]
+      required: [results]
       properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+
+    EvidenceJudgeRequest:
+      type: object
+      required: [question, evidence, retry_count]
+      properties:
+        question:
+          type: string
         evidence:
           type: array
           items:
-            $ref: '#/components/schemas/Evidence'
+            $ref: '#/components/schemas/SearchResult'
+        retry_count:
+          type: integer
+          minimum: 0
+          maximum: 2
+
+    EvidenceJudgeResponse:
+      type: object
+      required: [verdict, retry_allowed]
+      properties:
+        verdict:
+          type: string
+          enum: [SUFFICIENT, INSUFFICIENT]
+        missing:
+          type: string
+        suggested_rewrite:
+          type: string
+        retry_allowed:
+          type: boolean
+
+    WorkflowDispatchRequest:
+      type: object
+      required: [workflow_type, payload]
+      properties:
+        workflow_type:
+          type: string
+          enum: [fact_api, async_job, formatter]
+        payload:
+          type: object
+          additionalProperties: true
+
+    WorkflowDispatchResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, pending, failed]
+        output:
+          type: object
+          additionalProperties: true
 
     AnswerRequest:
       type: object
-      required: [plan, context]
+      required: [route, question, context]
       properties:
-        plan:
-          $ref: '#/components/schemas/PlanResponse'
+        route:
+          type: string
+          enum: [answer_direct, search, clarify]
+        question:
+          type: string
         evidence:
           type: array
           items:
-            $ref: '#/components/schemas/Evidence'
+            $ref: '#/components/schemas/SearchResult'
+        workflow_result:
+          type: object
+          additionalProperties: true
         context:
           $ref: '#/components/schemas/SessionContext'
         profile:
           $ref: '#/components/schemas/UserProfile'
-        options:
-          $ref: '#/components/schemas/AnswerOptions'
 
     AnswerResponse:
       type: object
@@ -350,22 +405,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Citation'
-        per_question_answers:
-          type: array
-          items:
-            $ref: '#/components/schemas/PerQuestionAnswer'
+        confidence:
+          type: number
+        uncertainty:
+          type: string
 
     MemoryUpsertRequest:
       type: object
-      required: [user_id, session_id, memories]
+      required: [user_id, conversation_id]
       properties:
         user_id:
           type: string
-        session_id:
+        conversation_id:
           type: string
-        memories:
+        session_memory:
           type: array
-          minItems: 1
+          items:
+            $ref: '#/components/schemas/MemoryItem'
+        long_term_memory:
+          type: array
           items:
             $ref: '#/components/schemas/MemoryItem'
         policy:
@@ -416,6 +474,10 @@ components:
             $ref: '#/components/schemas/Turn'
         summary:
           type: string
+        open_loops:
+          type: array
+          items:
+            type: string
 
     Turn:
       type: object
@@ -436,13 +498,6 @@ components:
         tone:
           type: string
           enum: [concise, balanced, detailed]
-        domain_level:
-          type: string
-          enum: [beginner, intermediate, advanced]
-        forbidden_topics:
-          type: array
-          items:
-            type: string
         preferred_format:
           type: string
           enum: [paragraph, bullet, table]
@@ -450,106 +505,33 @@ components:
           type: string
           default: ko
 
-    QuestionUnit:
-      type: object
-      required: [id, text]
-      properties:
-        id:
-          type: string
-        text:
-          type: string
-        depends_on:
-          type: array
-          items:
-            type: string
-
-    DagEdge:
-      type: object
-      required: [from, to]
-      properties:
-        from:
-          type: string
-        to:
-          type: string
-
-    RetrieveQuery:
-      type: object
-      required: [text]
-      properties:
-        text:
-          type: string
-        rewritten_text:
-          type: string
-        time_range:
-          $ref: '#/components/schemas/TimeRange'
-        metadata:
-          type: object
-          additionalProperties: true
-
-    TimeRange:
+    SearchFilter:
       type: object
       properties:
-        from:
+        product:
           type: string
-          format: date
-        to:
+        channel:
           type: string
-          format: date
-
-    RetrieveFilter:
-      type: object
-      properties:
-        source_types:
-          type: array
-          items:
-            type: string
-            enum: [web, docs, db, ticket]
-        domains:
-          type: array
-          items:
-            type: string
-        language:
+        user_tier:
           type: string
 
-    DocumentCandidate:
+    SearchResult:
       type: object
-      required: [doc_id, chunk_id, text, score]
+      required: [doc_id, title, content, score]
       properties:
         doc_id:
-          type: string
-        chunk_id:
           type: string
         title:
           type: string
-        url:
-          type: string
-          format: uri
-        text:
+        content:
           type: string
         score:
+          type: number
+        reranker_score:
           type: number
         metadata:
           type: object
           additionalProperties: true
-
-    Evidence:
-      type: object
-      required: [doc_id, chunk_id, text, rank]
-      properties:
-        doc_id:
-          type: string
-        chunk_id:
-          type: string
-        text:
-          type: string
-        rank:
-          type: integer
-        relevance:
-          type: number
-        freshness:
-          type: number
-        trust:
-          type: number
 
     Citation:
       type: object
@@ -557,44 +539,13 @@ components:
       properties:
         doc_id:
           type: string
-        chunk_id:
-          type: string
         title:
-          type: string
-        url:
-          type: string
-          format: uri
-
-    AnswerOptions:
-      type: object
-      properties:
-        style:
-          type: string
-          enum: [default, concise, detailed]
-        max_tokens:
-          type: integer
-          minimum: 64
-          maximum: 8192
-        include_followups:
-          type: boolean
-          default: true
-
-    PerQuestionAnswer:
-      type: object
-      required: [question_id, answer]
-      properties:
-        question_id:
-          type: string
-        answer:
           type: string
 
     MemoryItem:
       type: object
-      required: [type, key, value]
+      required: [key, value]
       properties:
-        type:
-          type: string
-          enum: [long_term, short_term]
         key:
           type: string
         value:
@@ -639,11 +590,13 @@ components:
       properties:
         trace_id:
           type: string
-        latency_ms:
-          type: integer
-        strategy:
+        route:
           type: string
         retrieval_used:
+          type: boolean
+        search_retry_count:
+          type: integer
+        workflow_used:
           type: boolean
 
     ErrorResponse:
