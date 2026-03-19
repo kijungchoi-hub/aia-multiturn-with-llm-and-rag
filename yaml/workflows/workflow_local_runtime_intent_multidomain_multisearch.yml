@@ -1,0 +1,543 @@
+﻿
+app:
+  description: Local Dify Chatflow for testing intent classification, visible query rewriting, multi-domain retrieval, and multi-search against the mock multiturn runtime.
+  icon: compass
+  icon_background: '#D9F5FF'
+  mode: advanced-chat
+  name: '[LOCAL_TEST] Intent+Rewrite+MultiDomain+MultiSearch'
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions: []
+      allowed_file_types: []
+      allowed_file_upload_methods: []
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods: []
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+    - Explain Dify workflow and memory together.
+    - Search workflow and dialog docs together.
+    - Hello
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: http-request
+      id: start-to-route
+      selected: false
+      source: local-start
+      sourceHandle: source
+      target: route-classifier
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: code
+      id: route-to-rewrite
+      selected: false
+      source: route-classifier
+      sourceHandle: source
+      target: query-rewrite
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: http-request
+      id: rewrite-to-search-primary
+      selected: false
+      source: query-rewrite
+      sourceHandle: source
+      target: search-primary
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: http-request
+      id: rewrite-to-search-workflow
+      selected: false
+      source: query-rewrite
+      sourceHandle: source
+      target: search-workflow
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: http-request
+      id: rewrite-to-search-memory
+      selected: false
+      source: query-rewrite
+      sourceHandle: source
+      target: search-memory
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: http-request
+      id: start-to-chat
+      selected: false
+      source: local-start
+      sourceHandle: source
+      target: runtime-chat
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: code
+      id: route-to-compose
+      selected: false
+      source: route-classifier
+      sourceHandle: source
+      target: compose-result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: code
+      id: rewrite-to-compose
+      selected: false
+      source: query-rewrite
+      sourceHandle: source
+      target: compose-result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: code
+      id: search-primary-to-compose
+      selected: false
+      source: search-primary
+      sourceHandle: source
+      target: compose-result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: code
+      id: search-workflow-to-compose
+      selected: false
+      source: search-workflow
+      sourceHandle: source
+      target: compose-result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: code
+      id: search-memory-to-compose
+      selected: false
+      source: search-memory
+      sourceHandle: source
+      target: compose-result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: code
+      id: chat-to-compose
+      selected: false
+      source: runtime-chat
+      sourceHandle: source
+      target: compose-result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: answer
+      id: compose-to-answer
+      selected: false
+      source: compose-result
+      sourceHandle: source
+      target: local-answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: Start node for local runtime integration tests.
+        selected: false
+        title: START
+        type: start
+        variables:
+        - label: Tone
+          max_length: 48
+          options:
+          - concise
+          - balanced
+          - detailed
+          required: false
+          type: select
+          variable: tone
+        - label: Language
+          max_length: 16
+          options:
+          - ko
+          - en
+          required: false
+          type: select
+          variable: language
+      height: 170
+      id: local-start
+      position:
+        x: 80
+        y: 320
+      positionAbsolute:
+        x: 80
+        y: 320
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: route-body
+            key: ''
+            type: text
+            value: '{"message":"{{#sys.query#}}","context":{"recent_turns":[]},"profile":{"tone":"{{#local-start.tone#}}","language":"{{#local-start.language#}}"}}'
+          type: json
+        desc: Basic intent classification.
+        headers: ''
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 1
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: false
+        timeout:
+          max_connect_timeout: 30000
+          max_read_timeout: 60000
+          max_write_timeout: 30000
+        title: ROUTE_CLASSIFIER
+        type: http-request
+        url: http://host.docker.internal:8080/supervisor/route
+        variables: []
+      height: 166
+      id: route-classifier
+      position:
+        x: 390
+        y: 20
+      positionAbsolute:
+        x: 390
+        y: 20
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        code: "import json\n\n\ndef main(route_body: object) -> dict:\n    payload = route_body\n    if isinstance(route_body, str):\n        try:\n            payload = json.loads(route_body)\n        except Exception:\n            payload = {}\n    if not isinstance(payload, dict):\n        payload = {}\n\n    rewritten_query = payload.get(\"rewritten_query\") or \"\"\n    if not rewritten_query:\n        rewritten_query = payload.get(\"clarifying_question\") or \"\"\n\n    return {\n        \"rewritten_query\": rewritten_query,\n        \"route\": payload.get(\"route\", \"\")\n    }\n"
+        code_language: python3
+        desc: Visible query rewrite node extracted from the supervisor output.
+        outputs:
+          rewritten_query:
+            type: string
+          route:
+            type: string
+        selected: false
+        title: QUERY_REWRITE
+        type: code
+        variables:
+        - value_selector:
+          - route-classifier
+          - body
+          variable: route_body
+      height: 80
+      id: query-rewrite
+      position:
+        x: 700
+        y: 20
+      positionAbsolute:
+        x: 700
+        y: 20
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: search-primary-body
+            key: ''
+            type: text
+            value: '{"query":"{{#query-rewrite.rewritten_query#}}","top_k":5}'
+          type: json
+        desc: Primary retrieval over the rewritten query.
+        headers: ''
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 1
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: false
+        timeout:
+          max_connect_timeout: 30000
+          max_read_timeout: 60000
+          max_write_timeout: 30000
+        title: SEARCH_PRIMARY
+        type: http-request
+        url: http://host.docker.internal:8080/search/hybrid
+        variables: []
+      height: 166
+      id: search-primary
+      position:
+        x: 1010
+        y: 180
+      positionAbsolute:
+        x: 1010
+        y: 180
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: search-workflow-body
+            key: ''
+            type: text
+            value: '{"query":"{{#query-rewrite.rewritten_query#}} workflow dify","top_k":5,"filters":{"channel":"dify"}}'
+          type: json
+        desc: Workflow-focused retrieval.
+        headers: ''
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 1
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: false
+        timeout:
+          max_connect_timeout: 30000
+          max_read_timeout: 60000
+          max_write_timeout: 30000
+        title: SEARCH_WORKFLOW
+        type: http-request
+        url: http://host.docker.internal:8080/search/hybrid
+        variables: []
+      height: 166
+      id: search-workflow
+      position:
+        x: 1010
+        y: 380
+      positionAbsolute:
+        x: 1010
+        y: 380
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: search-memory-body
+            key: ''
+            type: text
+            value: '{"query":"{{#query-rewrite.rewritten_query#}} memory summary","top_k":5}'
+          type: json
+        desc: Memory-focused retrieval.
+        headers: ''
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 1
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: false
+        timeout:
+          max_connect_timeout: 30000
+          max_read_timeout: 60000
+          max_write_timeout: 30000
+        title: SEARCH_MEMORY
+        type: http-request
+        url: http://host.docker.internal:8080/search/hybrid
+        variables: []
+      height: 166
+      id: search-memory
+      position:
+        x: 1010
+        y: 580
+      positionAbsolute:
+        x: 1010
+        y: 580
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: runtime-chat-body
+            key: ''
+            type: text
+            value: '{"conversation_id":"{{sys.conversation_id}}","user_id":"{{sys.user_id}}","message":"{{#sys.query#}}","context":{"summary":"local integration test"},"profile":{"tone":"{{#local-start.tone#}}","language":"{{#local-start.language#}}"},"options":{"top_k":5,"include_citations":true,"enable_memory_write":true,"max_search_retries":2}}'
+          type: json
+        desc: End-to-end chat path with retrieval and memory write.
+        headers: ''
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 1
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: false
+        timeout:
+          max_connect_timeout: 30000
+          max_read_timeout: 60000
+          max_write_timeout: 30000
+        title: RUNTIME_CHAT
+        type: http-request
+        url: http://host.docker.internal:8080/chat
+        variables: []
+      height: 166
+      id: runtime-chat
+      position:
+        x: 390
+        y: 760
+      positionAbsolute:
+        x: 390
+        y: 760
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        code: "import json\n\n\ndef parse_body(body: object) -> dict:\n    if isinstance(body, dict):\n        return body\n    if isinstance(body, str):\n        try:\n            return json.loads(body)\n        except Exception:\n            return {\"raw\": body}\n    return {\"raw\": str(body)}\n\n\ndef top_hits(payload: dict) -> list[str]:\n    results = payload.get(\"results\", [])\n    lines = []\n    for item in results[:3]:\n        meta = item.get(\"metadata\", {})\n        lines.append(f\"- {item.get('title', '')} [{meta.get('domain', 'unknown')}] ({meta.get('source_path', '')})\")\n    return lines or [\"- no result\"]\n\n\ndef main(route_body: object, rewrite_query: str, primary_body: object, workflow_body: object, memory_body: object, chat_body: object) -> dict:\n    route = parse_body(route_body)\n    primary = parse_body(primary_body)\n    workflow = parse_body(workflow_body)\n    memory = parse_body(memory_body)\n    chat = parse_body(chat_body)\n\n    answer = [\n        \"Local runtime integration summary\",\n        \"\",\n        f\"intent route: {route.get('route', '')}\",\n        f\"use_workflow: {route.get('use_workflow', False)}\",\n        f\"rewritten_query: {rewrite_query}\",\n        f\"sub_questions: {json.dumps(route.get('sub_questions', []), ensure_ascii=False)}\",\n        \"\",\n        \"primary search:\",\n        *top_hits(primary),\n        \"\",\n        \"workflow-focused search:\",\n        *top_hits(workflow),\n        \"\",\n        \"memory-focused search:\",\n        *top_hits(memory),\n        \"\",\n        \"chat answer preview:\",\n        str(chat.get('answer', ''))[:600],\n        \"\",\n        f\"chat route: {chat.get('route', '')}\",\n        f\"citations: {json.dumps(chat.get('citations', []), ensure_ascii=False)}\",\n        f\"debug: {json.dumps(chat.get('debug', {}), ensure_ascii=False)}\"\n    ]\n\n    return {\n        \"answer\": \"\\n\".join(answer),\n        \"route\": route.get(\"route\", \"\"),\n        \"chat_route\": chat.get(\"route\", \"\"),\n        \"chat_debug\": json.dumps(chat.get(\"debug\", {}), ensure_ascii=False)\n    }\n"
+        code_language: python3
+        desc: Combines the classification, rewrite, and search results into a readable test report.
+        outputs:
+          answer:
+            type: string
+          chat_debug:
+            type: string
+          chat_route:
+            type: string
+          route:
+            type: string
+        selected: false
+        title: COMPOSE_RESULT
+        type: code
+        variables:
+        - value_selector:
+          - route-classifier
+          - body
+          variable: route_body
+        - value_selector:
+          - query-rewrite
+          - rewritten_query
+          variable: rewrite_query
+        - value_selector:
+          - search-primary
+          - body
+          variable: primary_body
+        - value_selector:
+          - search-workflow
+          - body
+          variable: workflow_body
+        - value_selector:
+          - search-memory
+          - body
+          variable: memory_body
+        - value_selector:
+          - runtime-chat
+          - body
+          variable: chat_body
+      height: 80
+      id: compose-result
+      position:
+        x: 1330
+        y: 380
+      positionAbsolute:
+        x: 1330
+        y: 380
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#compose-result.answer#}}'
+        desc: Readable answer for the local integration test.
+        selected: false
+        title: ANSWER
+        type: answer
+        variables: []
+      height: 120
+      id: local-answer
+      position:
+        x: 1640
+        y: 380
+      positionAbsolute:
+        x: 1640
+        y: 380
+      selected: false
+      type: custom
+      width: 242
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.62

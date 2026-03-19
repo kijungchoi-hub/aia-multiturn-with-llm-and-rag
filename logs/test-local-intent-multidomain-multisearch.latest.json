@@ -1,0 +1,232 @@
+﻿{
+  "executed_at": "2026-03-19T09:54:03.940Z",
+  "base_url": "http://127.0.0.1:8080",
+  "status": "passed",
+  "health": {
+    "status": "ok",
+    "corpus_size": 525,
+    "memory_store_path": ".runtime/memory-store.json"
+  },
+  "intent": {
+    "greeting": {
+      "route": "answer_direct",
+      "rewritten_query": null,
+      "sub_questions": [],
+      "filters": {
+        "product": null,
+        "channel": null,
+        "user_tier": null
+      },
+      "clarifying_question": null,
+      "use_workflow": false
+    },
+    "compound": {
+      "route": "search",
+      "rewritten_query": "Dify workflow 문서와 memory 사용 가이드를 같이 찾아서 요약해 주세요.",
+      "sub_questions": [
+        "Dify workflow 문서와 memory 사용 가이드를 같이 찾아서 요약해 주세요."
+      ],
+      "filters": {
+        "product": null,
+        "channel": "dify",
+        "user_tier": "detailed"
+      },
+      "clarifying_question": null,
+      "use_workflow": false
+    }
+  },
+  "rewrite": {
+    "supervisor_rewritten_query": "Dify workflow 문서와 memory 사용 가이드를 같이 찾아서 요약해 주세요.",
+    "judge_suggested_rewrite": "Dify workflow 문서와 memory 사용 가이드를 같이 찾아서 요약해 주세요. 기준일 절차 조건 예외",
+    "judge_retry_allowed": true
+  },
+  "search_compare": {
+    "original_query": "Dify workflow 문서와 memory 사용 가이드를 같이 찾아서 요약해 주세요.",
+    "rewritten_query": "Dify workflow 문서와 memory 사용 가이드를 같이 찾아서 요약해 주세요. 기준일 절차 조건 예외",
+    "original_top_hits": [
+      {
+        "title": "Dify DSL “스켈레톤” 예시(YAML)",
+        "domain": "research",
+        "source_path": "docs/deep-research-report.md",
+        "score": 3.75,
+        "reranker_score": 4.125
+      },
+      {
+        "title": "5.5 Workflow 사용 경계",
+        "domain": "dialog",
+        "source_path": "docs/multiturn-dialog-flow-advanced.md",
+        "score": 3.5,
+        "reranker_score": 3.85
+      },
+      {
+        "title": "아키텍처 다이어그램",
+        "domain": "general",
+        "source_path": "docs/deep-research-architecture-memo.md",
+        "score": 3,
+        "reranker_score": 3.3
+      }
+    ],
+    "original_top1": {
+      "title": "Dify DSL “스켈레톤” 예시(YAML)",
+      "domain": "research",
+      "source_path": "docs/deep-research-report.md",
+      "score": 3.75,
+      "reranker_score": 4.125
+    },
+    "rewritten_top1": {
+      "title": "2) 문서유형 필터 정의",
+      "domain": "dialog",
+      "source_path": "docs/multiturn-dialog-flow-basic.md",
+      "score": 4,
+      "reranker_score": 4.4
+    },
+    "rewritten_top_hits": [
+      {
+        "title": "2) 문서유형 필터 정의",
+        "domain": "dialog",
+        "source_path": "docs/multiturn-dialog-flow-basic.md",
+        "score": 4,
+        "reranker_score": 4.4
+      },
+      {
+        "title": "Dify DSL “스켈레톤” 예시(YAML)",
+        "domain": "research",
+        "source_path": "docs/deep-research-report.md",
+        "score": 3.75,
+        "reranker_score": 4.125
+      },
+      {
+        "title": "5.5 Workflow 사용 경계",
+        "domain": "dialog",
+        "source_path": "docs/multiturn-dialog-flow-advanced.md",
+        "score": 3.5,
+        "reranker_score": 3.85
+      }
+    ],
+    "top_hit_changed": true
+  },
+  "search": {
+    "primary": {
+      "count": 6,
+      "domains": [
+        "research",
+        "general",
+        "memory",
+        "dialog"
+      ],
+      "top_hits": [
+        {
+          "title": "Dify DSL “스켈레톤” 예시(YAML)",
+          "domain": "research",
+          "source_path": "docs/deep-research-report.md",
+          "score": 3.75,
+          "reranker_score": 4.125
+        },
+        {
+          "title": "아키텍처 다이어그램",
+          "domain": "general",
+          "source_path": "docs/deep-research-architecture-memo.md",
+          "score": 3,
+          "reranker_score": 3.3
+        },
+        {
+          "title": "목적",
+          "domain": "memory",
+          "source_path": "docs/memory-usage-guide.md",
+          "score": 3,
+          "reranker_score": 3.3
+        }
+      ]
+    },
+    "workflow": {
+      "count": 4,
+      "domains": [
+        "general",
+        "research"
+      ],
+      "top_hits": [
+        {
+          "title": "1. Dify 선택 기준",
+          "domain": "general",
+          "source_path": "docs/deep-research-architecture-memo.md",
+          "score": 2.75,
+          "reranker_score": 3.025
+        },
+        {
+          "title": "Dify DSL “스켈레톤” 예시(YAML)",
+          "domain": "research",
+          "source_path": "docs/deep-research-report.md",
+          "score": 2.75,
+          "reranker_score": 3.025
+        },
+        {
+          "title": "Dify DSL “스켈레톤” 예시(YAML)",
+          "domain": "research",
+          "source_path": "docs/deep-research-report.md",
+          "score": 2.75,
+          "reranker_score": 3.025
+        }
+      ]
+    },
+    "memory": {
+      "count": 4,
+      "domains": [
+        "memory",
+        "general",
+        "research"
+      ],
+      "top_hits": [
+        {
+          "title": "memory-usage-guide.md",
+          "domain": "memory",
+          "source_path": "docs/memory-usage-guide.md",
+          "score": 5.25,
+          "reranker_score": 5.775
+        },
+        {
+          "title": "방식 1. HTTP Request 노드로 바로 호출",
+          "domain": "general",
+          "source_path": "docs/dify-local-runtime.md",
+          "score": 2,
+          "reranker_score": 2.2
+        },
+        {
+          "title": "Executive summary",
+          "domain": "research",
+          "source_path": "docs/deep-research-report.md",
+          "score": 1.75,
+          "reranker_score": 1.925
+        }
+      ]
+    }
+  },
+  "chat": {
+    "route": "search",
+    "citations": [
+      {
+        "doc_id": "doc-75",
+        "title": "Dify DSL “스켈레톤” 예시(YAML)"
+      },
+      {
+        "doc_id": "doc-245",
+        "title": "5.5 Workflow 사용 경계"
+      },
+      {
+        "doc_id": "doc-4",
+        "title": "아키텍처 다이어그램"
+      }
+    ],
+    "debug": {
+      "trace_id": "trace-1773914044029",
+      "route": "search",
+      "retrieval_used": true,
+      "search_retry_count": 0,
+      "workflow_used": false
+    },
+    "answer_preview": "질문: Dify workflow 문서와 memory 사용 가이드를 같이 찾아서 요약해 주세요.\n로컬 실험 런타임 기준 정리:\n1. Dify DSL “스켈레톤” 예시(YAML): ```yaml\n2. 5.5 Workflow 사용 경계: - 메인 멀티턴 상태 제어는 Workflow로 옮기지 않는다.\n3. 아키텍처 다이어그램: ```mermaid\n대화 요약 반영: local integration test"
+  },
+  "artifacts": {
+    "json_log": "logs/test-local-intent-multidomain-multisearch.latest.json",
+    "markdown_report": "logs/test-local-intent-multidomain-multisearch.latest.md"
+  }
+}
