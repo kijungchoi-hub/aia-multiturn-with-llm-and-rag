@@ -1,0 +1,211 @@
+app:
+  description: Minimal Dify Chatflow example that calls the local multiturn runtime /chat API.
+  icon: chatbot
+  icon_background: '#E4FBCC'
+  mode: advanced-chat
+  name: '[LOCAL_EXPERIMENT] Runtime Minimal Chatflow'
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions: []
+      allowed_file_types: []
+      allowed_file_upload_methods: []
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods: []
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: http-request
+      id: start-to-runtime-chat
+      selected: false
+      source: 'local-start'
+      sourceHandle: source
+      target: 'local-chat'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: code
+      id: runtime-chat-to-parser
+      selected: false
+      source: 'local-chat'
+      sourceHandle: source
+      target: 'local-parser'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: answer
+      id: parser-to-answer
+      selected: false
+      source: 'local-parser'
+      sourceHandle: source
+      target: 'local-answer'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: Start node for the local runtime experiment.
+        selected: false
+        title: START
+        type: start
+        variables:
+        - label: Tone
+          max_length: 48
+          options:
+          - concise
+          - balanced
+          - detailed
+          required: false
+          type: select
+          variable: tone
+        - label: Language
+          max_length: 16
+          options:
+          - ko
+          - en
+          required: false
+          type: select
+          variable: language
+      height: 170
+      id: 'local-start'
+      position:
+        x: 80
+        y: 220
+      positionAbsolute:
+        x: 80
+        y: 220
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: local-chat-body
+            key: ''
+            type: text
+            value: '{"conversation_id":"{{sys.conversation_id}}","user_id":"{{sys.user_id}}","message":"{{#sys.query#}}","context":{"summary":""},"profile":{"tone":"{{#local-start.tone#}}","language":"{{#local-start.language#}}"},"options":{"top_k":5,"include_citations":true,"enable_memory_write":true}}'
+          type: json
+        desc: Calls the local runtime /chat endpoint.
+        headers: ''
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 1
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: false
+        timeout:
+          max_connect_timeout: 30000
+          max_read_timeout: 60000
+          max_write_timeout: 30000
+        title: LOCAL_RUNTIME_CHAT
+        type: http-request
+        url: http://host.docker.internal:8080/chat
+        variables: []
+      height: 166
+      id: 'local-chat'
+      position:
+        x: 390
+        y: 220
+      positionAbsolute:
+        x: 390
+        y: 220
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        code: "import json\n\ndef main(body: object) -> dict:\n    payload = body\n    if isinstance(body, str):\n        try:\n            payload = json.loads(body)\n        except Exception:\n            payload = {\"answer\": body}\n    if not isinstance(payload, dict):\n        payload = {\"answer\": str(payload)}\n\n    citations = payload.get(\"citations\", [])\n    debug = payload.get(\"debug\", {})\n\n    return {\n        \"answer\": payload.get(\"answer\", \"\"),\n        \"route\": payload.get(\"route\", \"\"),\n        \"citations_json\": json.dumps(citations, ensure_ascii=False),\n        \"debug_json\": json.dumps(debug, ensure_ascii=False)\n    }\n"
+        code_language: python3
+        desc: Extracts answer, route, citations, and debug payload from the runtime response.
+        outputs:
+          answer:
+            type: string
+          citations_json:
+            type: string
+          debug_json:
+            type: string
+          route:
+            type: string
+        selected: false
+        title: PARSE_RUNTIME_RESPONSE
+        type: code
+        variables:
+        - value_selector:
+          - 'local-chat'
+          - body
+          variable: body
+      height: 80
+      id: 'local-parser'
+      position:
+        x: 700
+        y: 220
+      positionAbsolute:
+        x: 700
+        y: 220
+      selected: false
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#local-parser.answer#}}'
+        desc: Final answer from the local runtime.
+        selected: false
+        title: ANSWER
+        type: answer
+        variables: []
+      height: 120
+      id: 'local-answer'
+      position:
+        x: 1010
+        y: 220
+      positionAbsolute:
+        x: 1010
+        y: 220
+      selected: false
+      type: custom
+      width: 242
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.8

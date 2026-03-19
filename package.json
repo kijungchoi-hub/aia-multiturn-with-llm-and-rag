@@ -1,0 +1,15 @@
+{
+  "name": "aia-multiturn-with-llm-and-rag",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local runtime for experimenting with Dify multiturn workflow assets",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
+    "test:smoke": "node scripts/smoke-test-runtime.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
