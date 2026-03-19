@@ -14,8 +14,8 @@
 - [deep-research-architecture-memo.md](deep-research-architecture-memo.md)
 - [multiturn-dialog-flow-advanced.md](multiturn-dialog-flow-advanced.md)
 - [multiturn-flow-prompts.md](multiturn-flow-prompts.md)
-- [openapi-multiturn.yaml](openapi-multiturn.yaml)
-- [prompt-config.yaml](prompt-config.yaml)
+- [openapi-multiturn.yaml](../yaml/specs/openapi-multiturn.yaml)
+- [prompt-config.yaml](../yaml/specs/prompt-config.yaml)
 
 ## 핵심 원칙
 
@@ -72,7 +72,7 @@
 
 - [multiturn-dialog-flow-advanced.md](multiturn-dialog-flow-advanced.md)
 - [multiturn-flow-prompts.md](multiturn-flow-prompts.md)의 `MEM`
-- [prompt-config.yaml](prompt-config.yaml)의 `memory_candidate_and_save_decision`
+- [prompt-config.yaml](../yaml/specs/prompt-config.yaml)의 `memory_candidate_and_save_decision`
 
 ## 무엇을 저장할지
 
@@ -149,7 +149,7 @@
 메모리 후보는 별도 프롬프트 노드에서 추출한다.
 
 - 노드 이름: `memory_candidate_and_save_decision`
-- 위치: [prompt-config.yaml](prompt-config.yaml)
+- 위치: [prompt-config.yaml](../yaml/specs/prompt-config.yaml)
 
 입력:
 
@@ -194,7 +194,7 @@
 
 스펙 위치:
 
-- [openapi-multiturn.yaml](openapi-multiturn.yaml)
+- [openapi-multiturn.yaml](../yaml/specs/openapi-multiturn.yaml)
 
 ### 요청 스키마
 
@@ -442,3 +442,4 @@
 - 메모리 주체: `Chatflow`
 - 보조 실행: `Workflow`
 - 저장 인터페이스: `/memory/upsert`
+

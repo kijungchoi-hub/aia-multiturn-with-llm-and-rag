@@ -62,11 +62,16 @@ flowchart TD
 |   |-- multiturn-dialog-flow-basic.md
 |   |-- multiturn-flow-advanced-prompts.md
 |   |-- multiturn-flow-basic-prompts.md
-|   |-- multiturn-flow-prompts.md
-|   |-- openapi-multiturn.yaml
-|   `-- prompt-config.yaml
+|   `-- multiturn-flow-prompts.md
 `-- scripts/
     `-- demo-prompt-test.mjs
+`-- yaml/
+    |-- specs/
+    |   |-- openapi-multiturn.yaml
+    |   `-- prompt-config.yaml
+    `-- workflows/
+        |-- workflow_ver1.7.yml
+        `-- workflow_ver1.8.yml
 ```
 
 ## 핵심 문서
@@ -106,7 +111,7 @@ flowchart TD
 - [docs/multiturn-flow-advanced-prompts.md](docs/multiturn-flow-advanced-prompts.md)
   - 고급 흐름 프롬프트 템플릿
 
-- [docs/prompt-config.yaml](docs/prompt-config.yaml)
+- [yaml/specs/prompt-config.yaml](yaml/specs/prompt-config.yaml)
   - 실제 데모 스크립트가 읽는 프롬프트 설정 파일
   - 현재는 YAML 확장자를 사용하지만 내용은 JSON 형식
 
@@ -126,7 +131,7 @@ flowchart TD
 
 ### API 스펙
 
-- [docs/openapi-multiturn.yaml](docs/openapi-multiturn.yaml)
+- [yaml/specs/openapi-multiturn.yaml](yaml/specs/openapi-multiturn.yaml)
   - 현재 아키텍처 기준 OpenAPI 초안
 
 주요 엔드포인트:
@@ -158,11 +163,11 @@ flowchart TD
 
 ## 데모 스크립트
 
-[scripts/demo-prompt-test.mjs](scripts/demo-prompt-test.mjs)는 [docs/prompt-config.yaml](docs/prompt-config.yaml)을 읽어 프롬프트 노드별 렌더링을 확인하는 데모 스크립트입니다.
+[scripts/demo-prompt-test.mjs](scripts/demo-prompt-test.mjs)는 [yaml/specs/prompt-config.yaml](yaml/specs/prompt-config.yaml)을 읽어 프롬프트 노드별 렌더링을 확인하는 데모 스크립트입니다.
 
 주요 동작:
 
-1. `prompt-config.yaml` 로드
+1. `yaml/specs/prompt-config.yaml` 로드
 2. `global_system`, `nodes`, `pipeline`, `demo_context` 파싱
 3. 필요 시 CSV 특정 행을 읽어 데모 변수에 주입
 4. 최종 프롬프트와 출력 스키마 출력
@@ -172,7 +177,7 @@ flowchart TD
 ```bash
 node scripts/demo-prompt-test.mjs
 node scripts/demo-prompt-test.mjs B
-node scripts/demo-prompt-test.mjs docs/prompt-config.yaml
+node scripts/demo-prompt-test.mjs yaml/specs/prompt-config.yaml
 node scripts/demo-prompt-test.mjs --csv data/MULTITURN_20260306.csv --row 1
 node scripts/demo-prompt-test.mjs B --csv data/MULTITURN_20260306.csv --row 3
 ```
@@ -180,15 +185,15 @@ node scripts/demo-prompt-test.mjs B --csv data/MULTITURN_20260306.csv --row 3
 전제:
 
 - Node.js 18 이상 권장
-- `docs/prompt-config.yaml`은 현재 JSON 형식이어야 함
+- `yaml/specs/prompt-config.yaml`은 현재 JSON 형식이어야 함
 - CSV는 UTF-8 기준으로 읽는 것을 전제
 
 ## 권장 확인 순서
 
 1. [docs/deep-research-architecture-memo.md](docs/deep-research-architecture-memo.md)로 전체 방향 확인
 2. [docs/multiturn-dialog-flow-advanced.md](docs/multiturn-dialog-flow-advanced.md)로 런타임 흐름 확인
-3. [docs/openapi-multiturn.yaml](docs/openapi-multiturn.yaml)로 모듈 경계와 입출력 확인
-4. [docs/prompt-config.yaml](docs/prompt-config.yaml)로 실제 프롬프트 노드 구성 확인
+3. [yaml/specs/openapi-multiturn.yaml](yaml/specs/openapi-multiturn.yaml)로 모듈 경계와 입출력 확인
+4. [yaml/specs/prompt-config.yaml](yaml/specs/prompt-config.yaml)로 실제 프롬프트 노드 구성 확인
 5. [docs/memory-usage-guide.md](docs/memory-usage-guide.md)로 메모리 저장 정책 확인
 6. [scripts/demo-prompt-test.mjs](scripts/demo-prompt-test.mjs)로 노드별 렌더링 점검
 7. [data/MULTITURN_20260306.csv](data/MULTITURN_20260306.csv)로 샘플 질의 테스트
@@ -196,8 +201,8 @@ node scripts/demo-prompt-test.mjs B --csv data/MULTITURN_20260306.csv --row 3
 ## 현재 범위와 제약
 
 - 이 저장소는 구현 코드보다 설계 문서와 인터페이스 정의 중심이다.
-- [docs/openapi-multiturn.yaml](docs/openapi-multiturn.yaml)은 초안이므로 실제 운영 API와 다를 수 있다.
-- [docs/prompt-config.yaml](docs/prompt-config.yaml)은 파일명과 달리 현재 JSON 형식을 전제로 한다.
+- [yaml/specs/openapi-multiturn.yaml](yaml/specs/openapi-multiturn.yaml)은 초안이므로 실제 운영 API와 다를 수 있다.
+- [yaml/specs/prompt-config.yaml](yaml/specs/prompt-config.yaml)은 파일명과 달리 현재 JSON 형식을 전제로 한다.
 - `Dify Workflow` 관련 내용은 메모리 없는 보조 서브플로 사용을 전제로 정리되어 있다.
 - CSV 로더 인코딩 상태에 따라 일부 컬럼 매핑 조정이 필요할 수 있다.
 
@@ -207,8 +212,8 @@ node scripts/demo-prompt-test.mjs B --csv data/MULTITURN_20260306.csv --row 3
 - [docs/deep-research-report.md](docs/deep-research-report.md)
 - [docs/multiturn-dialog-flow-advanced.md](docs/multiturn-dialog-flow-advanced.md)
 - [docs/memory-usage-guide.md](docs/memory-usage-guide.md)
-- [docs/openapi-multiturn.yaml](docs/openapi-multiturn.yaml)
-- [docs/prompt-config.yaml](docs/prompt-config.yaml)
+- [yaml/specs/openapi-multiturn.yaml](yaml/specs/openapi-multiturn.yaml)
+- [yaml/specs/prompt-config.yaml](yaml/specs/prompt-config.yaml)
 - [docs/multiturn-flow-prompts.md](docs/multiturn-flow-prompts.md)
 - [scripts/demo-prompt-test.mjs](scripts/demo-prompt-test.mjs)
 - [data/MULTITURN_20260306.csv](data/MULTITURN_20260306.csv)

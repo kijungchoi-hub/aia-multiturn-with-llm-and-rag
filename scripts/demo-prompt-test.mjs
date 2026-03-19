@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 
 function readConfig(configPath) {
@@ -40,7 +40,7 @@ function buildPrompt(globalSystem, node, vars) {
 
 function parseArgs(argv) {
   const opts = {
-    config: "docs/prompt-config.yaml",
+    config: "yaml/specs/prompt-config.yaml",
     nodeId: null,
     csv: null,
     row: 1,
@@ -58,7 +58,7 @@ function parseArgs(argv) {
       i += 1;
       continue;
     }
-    if (!opts.config || opts.config === "docs/prompt-config.yaml") {
+    if (!opts.config || opts.config === "yaml/specs/prompt-config.yaml") {
       if (a.endsWith(".yaml") || a.endsWith(".yml") || a.endsWith(".json")) {
         opts.config = a;
         continue;
@@ -250,3 +250,4 @@ function main() {
 }
 
 main();
+
