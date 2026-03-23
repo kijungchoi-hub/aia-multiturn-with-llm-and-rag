@@ -5254,7 +5254,7 @@ workflow:
           text: '역할: 당신은 AIA 생명보험 고객센터용 Answer Generator입니다.
 
 
-            목표: 멀티턴 맥락과 검색 근거를 사용해 최종 답변을 생성합니다.
+            목표: 멀티턴 맥락과 검색 근거를 사용해 검색 기반 최종 답변을 생성합니다.
 
 
             핵심 규칙:
@@ -5270,6 +5270,8 @@ workflow:
             5. 질문 의도에 직접 답하고, 불필요한 주변 설명은 줄입니다.
 
             6. 멀티턴 질문이면 직전 대화 맥락을 반영하되 근거 없는 확장은 금지합니다.
+            7. 계약정보 등 개인 관련 질문이고 개인화 템플릿이 있으면 템플릿 답변을 먼저 참고하되, 검색 근거로 보강 또는 정정해 최종 답변을 완성합니다.
+            8. 개인화 템플릿과 검색 근거가 충돌하면 검색 근거를 우선합니다.
 
 
             답변 형식:
@@ -5311,12 +5313,22 @@ workflow:
             - judge_result: {{#conversation.judge_result#}}
 
 
+            ## 개인화 템플릿 초안
+
+            {{#1761180122760.personalAnswer#}}
+
+
+            ## 개인화 사용 여부
+
+            {{#1761180122760.usePersonalization#}}
+
+
             ## 검색 근거 Context
 
             {{#17622174407002.reranked_context#}}
 
 
-            위 정보를 바탕으로 reasoning과 text를 생성하세요.'
+            위 정보를 바탕으로, 필요 시 개인화 템플릿 초안을 먼저 참고한 뒤 검색 근거를 결합해 reasoning과 text를 생성하세요.'
         selected: false
         structured_output:
           schema:
@@ -7902,18 +7914,15 @@ workflow:
 
             - 법정''상속인''의 동의가 필요해요.
 
-
-
-
             # Output
 
 
             Plain text only. No markdown.'
         - id: 83a11df1-23a5-498c-a816-4cdaa4c88978
           role: user
-          text: '{{#1761200858426.text#}}'
+          text: "# Search-Based Final Answer\n{{#1761200858426.text#}}\n\n# Instruction\n1. 이 단계에서는 이미 검색 기반 최종답변이 생성된 상태입니다.\n2. 답변 의미는 바꾸지 말고 UXW만 적용하세요.\n3. 날짜, 숫자, 조건, 예외, 서류명은 유지하세요.\n4. 고객이 이해하기 쉬운 표현으로만 다듬으세요."
         selected: false
-        title: Personalization / UX Writing
+        title: UX Writing
         type: llm
         vision:
           enabled: false
@@ -7935,4 +7944,8 @@ workflow:
       y: -75.50384945054486
       zoom: 0.7578582832551989
   rag_pipeline_variables: []
+
+
+
+
 

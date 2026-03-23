@@ -116,7 +116,36 @@ context: {{context}}
 }
 ```
 
-## 6) 쿼리 재작성 및 API 질의 정규화 (F1)
+## 6) 용어 정규화 및 표준 용어 매핑 (E2)
+
+```text
+[System]
+질문, 개인화 템플릿, 문서 표현 간 용어 차이를 줄이기 위해 표준 용어를 정의하라.
+검색 recall을 높이기 위한 확장 용어는 허용하되, 최종 답변에 사용할 고객 표현도 함께 정하라.
+
+[User]
+question: {{question}}
+profile: {{profile}}
+domain_terms: {{domain_terms}}
+personal_template: {{personal_template}}
+
+[Output JSON Schema]
+{
+  "canonical_terms": [
+    {
+      "source":"string",
+      "canonical":"string",
+      "search_aliases":["string"],
+      "answer_expression":"string",
+      "why":"string"
+    }
+  ],
+  "must_keep":["string"],
+  "must_avoid":["string"]
+}
+```
+
+## 7) 쿼리 재작성 및 API 질의 정규화 (F1)
 
 ```text
 [System]
@@ -137,7 +166,7 @@ slots: {{slots}}
 }
 ```
 
-## 7) 의존 질의 판정 및 실행 단계 구성 (F2, F3, F4)
+## 8) 의존 질의 판정 및 실행 단계 구성 (F2, F3, F4)
 
 ```text
 [System]
@@ -154,7 +183,7 @@ questions: {{questions}}
 }
 ```
 
-## 8) 검색/API 결과 근거 추출 및 점수화 (F5, F6)
+## 9) 검색/API 결과 근거 추출 및 점수화 (F5, F6)
 
 ```text
 [System]
@@ -181,7 +210,7 @@ question: {{question}}
 }
 ```
 
-## 9) 근거 충분성 평가 및 재검색 또는 재조회 루프 (V0, V1)
+## 10) 근거 충분성 평가 및 재검색 또는 재조회 루프 (V0, V1)
 
 ```text
 [System]
@@ -201,7 +230,7 @@ evidence: {{evidence}}
 }
 ```
 
-## 10) 질문별 중간 응답 생성 (S0)
+## 11) 질문별 중간 응답 생성 (S0)
 
 ```text
 [System]
@@ -224,7 +253,7 @@ evidence_by_question: {{evidence_by_question}}
 }
 ```
 
-## 11) 충돌/모순 감지 및 해결 (S1, S2)
+## 12) 충돌/모순 감지 및 해결 (S1, S2)
 
 ```text
 [System]
@@ -243,43 +272,72 @@ evidence: {{evidence}}
 }
 ```
 
-## 12) 최종 응답 합성 (T0)
+## 13) 개인화 템플릿 초안 생성 (T0)
 
 ```text
 [System]
-질문별 답변을 하나의 일관된 최종 응답으로 합성하라.
-필요하면 현재값, 규정, 적용시점 순으로 구조화하라.
+계약정보 등 개인 관련 질문이면 답변 템플릿 기반 초안을 먼저 생성하라.
+이 단계는 개인 맥락과 응답 뼈대를 만드는 단계이며, 사실 확정은 하지 않는다.
 
 [User]
+question: {{question}}
+profile: {{profile}}
+personal_template: {{personal_template}}
+user_facts: {{user_facts}}
+
+[Output JSON Schema]
+{
+  "template_answer":"string",
+  "used_template":true,
+  "notes":"string"
+}
+```
+
+## 14) 검색 기반 최종답변 생성 (T1)
+
+```text
+[System]
+질문별 검색 근거 답변과 개인화 템플릿 초안을 결합해 검색 기반 최종답변을 생성하라.
+템플릿 초안은 개인 맥락과 구조 힌트로만 사용하고, 사실 확정은 검색/API 근거를 우선한다.
+이 단계에서 표준 용어를 함께 통일하라.
+
+[User]
+question: {{question}}
 drafts: {{resolved_drafts}}
+template_answer: {{template_answer}}
+canonical_terms: {{canonical_terms}}
 citations: {{citations}}
 
 [Output JSON Schema]
 {
-  "answer":"string",
+  "final_search_answer":"string",
   "sections":[{"title":"string","body":"string"}],
+  "applied_terms":[
+    {"source":"string","canonical":"string","answer_expression":"string"}
+  ],
   "citations":[{"doc_id":"string","chunk_id":"string"}]
 }
 ```
 
-## 13) 개인화 후처리 (T1)
+## 15) UXW 후처리 (T2)
 
 ```text
 [System]
-정답 의미를 바꾸지 말고 사용자 선호(톤, 길이, 형식)만 반영하라.
+검색 기반 최종답변이 생성된 뒤 고객경험 표현만 마지막 단계에서 반영하라.
+답변 의미를 바꾸지 말고, 날짜, 숫자, 조건, 예외는 유지한다.
 
 [User]
-answer: {{answer}}
+answer: {{final_search_answer}}
 profile: {{profile}}
 
 [Output JSON Schema]
 {
-  "personalized_answer":"string",
-  "applied":{"tone":"string","format":"string","length":"string"}
+  "uxw_answer":"string",
+  "applied":{"uxw":"string"}
 }
 ```
 
-## 14) 멀티턴 연결문 생성 (T2)
+## 16) 멀티턴 연결문 생성 (T3)
 
 ```text
 [System]
@@ -287,7 +345,7 @@ profile: {{profile}}
 
 [User]
 recent_turns: {{recent_turns}}
-current_answer: {{personalized_answer}}
+current_answer: {{uxw_answer}}
 
 [Output JSON Schema]
 {
@@ -295,8 +353,7 @@ current_answer: {{personalized_answer}}
   "followups":["string","string"]
 }
 ```
-
-## 15) 메모리 업데이트 후보 추출/저장 (R0, R1, R2, R3)
+## 17) 메모리 업데이트 후보 추출/저장 (R0, R1, R2, R3)
 
 ```text
 [System]
@@ -316,7 +373,7 @@ memory_policy: {{memory_policy}}
 }
 ```
 
-## 16) 안전 대체 응답 (GY)
+## 18) 안전 대체 응답 (GY)
 
 ```text
 [System]
@@ -334,13 +391,24 @@ user_intent: {{user_intent}}
 }
 ```
 
-## 17) 오케스트레이터 연결 순서 (권장)
+## 19) 오케스트레이터 연결 순서 (권장)
 
 1. `Global System`
 2. `B -> C/D`
 3. `M0/P0 + G0`
-4. `E -> F1 -> F2/F3/F4 -> F5/F6`
+4. `E -> E2 -> F1 -> F2/F3/F4 -> F5/F6`
 5. `V0` 부족 시 `V1` 루프
-6. `S0 -> S1/S2 -> T0 -> T1 -> T2`
+6. `S0 -> S1/S2 -> T0 -> T1 -> T2 -> T3`
 7. `R0/R1/R2(or R3)`
 8. 정책 차단 시 언제든 `GY`로 단락 처리
+
+
+
+
+
+
+
+
+
+
+

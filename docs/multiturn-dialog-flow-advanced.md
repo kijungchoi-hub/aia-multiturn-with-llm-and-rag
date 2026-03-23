@@ -28,7 +28,7 @@
 
 3. 멀티턴 질의 처리 원칙
 - 현재 턴 질문은 최근 대화 맥락, 진행 중 이슈, 직전 답변의 미완료 슬롯을 포함해 재작성한다.
-- Supervisor는 질문을 `answer_direct | search | clarify` 세 경로로 라우팅한다.
+- Supervisor는 질문을 `answer_direct | search | personalized_search | clarify` 네 경로로 라우팅한다.
 - `clarify`는 필수 슬롯이 비었거나 질문이 모호할 때만 사용한다.
 
 4. 재검색 루프 원칙
@@ -46,12 +46,18 @@
   - 역할: 메인 대화 진입점, 세션 메모리 유지, Supervisor/Answer 생성
 - `Supervisor LLM`
   - 역할: 맥락 반영 질의 재작성, 질문 분해, 툴 호출 여부 결정
+- `Terminology Canonicalizer`
+  - 역할: 사용자 표현, 템플릿 표현, 문서 표현을 검색/답변용 표준 용어로 정규화
 - `Azure AI Search Hybrid Tool`
   - 역할: `search + vector + filter + semantic ranker` 호출
 - `Evidence Judge LLM`
   - 역할: 현재 검색 근거가 답변에 충분한지 판정
+- `Personalization Template Generator`
+  - 역할: 계약정보 등 개인 관련 질문에 대해 답변 템플릿 기반 초안을 먼저 생성
 - `Answer Generator LLM`
-  - 역할: 근거 기반 최종 답변 생성
+  - 역할: 템플릿 초안과 검색 근거를 결합해 검색 기반 최종 답변 생성
+- `UXW Postprocessor`
+  - 역할: 검색 기반 최종 답변을 고객경험 표현으로 마지막 정리
 - `Workflow Subflow`
   - 역할: 외부 API 조회, 후처리, 비동기 작업, 배치성 작업
 - `Memory Writer`
@@ -71,7 +77,9 @@ flowchart TD
 
     E -->|answer_direct| J[Answer Generator]
     E -->|clarify| K[확인 질문 생성]
-    E -->|search| F[Azure AI Search Hybrid Tool 호출]
+    E -->|personalized_search| P0[개인화 템플릿 초안 생성<br/>계약정보 등 개인 관련 질문]
+    E -->|search| EN[용어 정규화<br/>질문/문서/템플릿 용어 통일]
+    EN --> F[Azure AI Search Hybrid Tool 호출]
 
     F --> G[검색 결과 정규화<br/>RRF 결과 + semantic ranker 결과]
     G --> H[Evidence Judge]
@@ -81,9 +89,10 @@ flowchart TD
     I --> F
     H -->|INSUFFICIENT + retry>=2| K
 
-    J --> L[개인화 후처리<br/>톤/길이/형식 적용]
-    K --> L
-    L --> M[멀티턴 연결문 생성<br/>다음 액션/보완 질문]
+    P0 --> J[검색 기반 최종답변 생성<br/>템플릿 초안 + 검색 근거 결합]
+    J --> U[UXW 후처리<br/>고객경험 표현 적용]
+    K --> U
+    U --> M[멀티턴 연결문 생성<br/>다음 액션/보완 질문]
     M --> N[응답 반환]
 
     N --> O[메모리 후보 추출]
@@ -125,9 +134,13 @@ Supervisor는 아래 JSON 스키마를 산출한다.
 판정 규칙:
 - `answer_direct`: 세션 메모리와 직전 근거만으로 충분히 답할 수 있을 때
 - `search`: 정책/상품 규정/근거 확인이 필요할 때
+- `personalized_search`: 계약정보, 고객별 상태, 개인 계약 맥락처럼 답변 템플릿과 검색 근거를 함께 써야 할 때
 - `clarify`: 필수 엔티티가 비었거나 질문이 모호할 때
 
 ### 5.3 Azure AI Search 호출 규칙
+- 검색 직전 `Terminology Canonicalizer`를 통해 질문 용어를 표준 용어로 정규화한다.
+- 정규화 규칙은 `사용자 표현 -> 내부 표준 용어 -> 문서 검색 용어` 3단 매핑을 허용한다.
+- 예: `보험 해지 -> 보험 해약 -> 해약/해지 관련 문서`, `명의변경 -> 계약관계자(명의) 변경`
 - 기본 모드는 `hybrid`
 - 가능한 경우 `semantic_ranker = true`
 - 필터는 상품/채널/권한/고객 구분 등 메타데이터로 전달
@@ -169,7 +182,12 @@ Judge 규칙:
 - 1문단: 현재 질문에 대한 직접 답변
 - 2문단: 근거가 되는 규정/조건/예외
 - 필요 시 3문단: 다음 액션 또는 추가 확인 질문
-- 메모리 기반 개인화는 문체/길이/형식에만 적용하고, 근거 내용은 바꾸지 않는다.
+- 계약정보 등 개인 관련 질문이면 답변 템플릿 기반 초안을 먼저 생성한다.
+- 그 다음 RAG 검색 근거를 결합해 검색 기반 최종 답변을 생성한다.
+- 템플릿 초안은 개인 맥락과 응답 뼈대를 제공하고, 사실 확정은 검색/API 근거가 담당한다.
+- 템플릿 초안과 검색 근거가 충돌하면 검색/API 근거가 우선한다.
+- 용어 통일은 검색 기반 최종 답변 생성 단계 안에서 함께 처리한다.
+- UXW는 검색 기반 최종 답변이 생성된 뒤 마지막 단계에서만 적용하고, 날짜/숫자/조건/예외/서류명은 바꾸지 않는다.
 
 ## 6) 기존 CSV 기반 로직과의 결합
 
@@ -181,6 +199,7 @@ Judge 규칙:
 - 실시간 계약 상태 조회는 `Workflow/API` 호출
 - 정책/규정/횟수/적용일은 `Azure AI Search Hybrid` 검색
 - 혼합형 질문이면 `Workflow/API + AI Search`를 병렬 실행한 뒤 Judge가 합쳐서 판정한다.
+- 병합 직후 후처리에서 동일 개념을 하나의 표준 용어로 통일하고, 고객에게는 한 표현만 반복 사용한다.
 
 3. 충돌 해결
 - 사실값 충돌: 최신 API 결과 우선
@@ -208,5 +227,26 @@ Judge 규칙:
 - [ ] `Workflow`가 메모리 없는 서브플로 역할로만 제한되었는가
 - [ ] 검색이 `Azure AI Search hybrid + semantic ranker` 기준으로 정의되었는가
 - [ ] Judge 재검색 루프 최대 횟수가 정의되었는가
-- [ ] `answer_direct | search | clarify` 라우팅이 명시되었는가
+- [ ] `answer_direct | search | personalized_search | clarify` 라우팅이 명시되었는가
+- [ ] 검색 전 용어 정규화 단계가 정의되었는가
+- [ ] 개인 질문에서 `템플릿 초안 -> 검색 기반 최종답변 -> UXW` 순서가 정의되었는가
+- [ ] 개인화 템플릿이 사실 근거를 덮어쓰지 않도록 우선순위가 정의되었는가
 - [ ] 세션 메모리와 장기 메모리 저장 경계가 분리되었는가
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
